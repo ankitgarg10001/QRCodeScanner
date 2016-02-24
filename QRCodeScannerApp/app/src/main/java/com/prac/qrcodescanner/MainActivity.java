@@ -1,11 +1,13 @@
-package test.com.qrcodescanner;
+package com.prac.qrcodescanner;
 
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.Point;
+import android.net.Uri;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -24,6 +26,9 @@ import com.google.zxing.WriterException;
 import com.prac.qrcodescanner.Contents;
 import com.prac.qrcodescanner.QRCodeEncoder;
 import com.prac.qrcodescanner.R;
+
+import java.net.MalformedURLException;
+import java.net.URL;
 
 import me.dm7.barcodescanner.zxing.ZXingScannerView;
 
@@ -139,23 +144,48 @@ public class MainActivity extends Activity implements ZXingScannerView.ResultHan
     public void handleResult(Result rawResult) {
         // Do something with the result here
         String resultText = rawResult.getText();
-        showDialog("Code Scan Results", rawResult.getBarcodeFormat().toString() + " : " + resultText);
+        showDialog("Code Scan Results", resultText);
         Log.v(TAG, rawResult.getText()); // Prints scan results
         Log.v(TAG, rawResult.getBarcodeFormat().toString()); // Prints the scan format (qrcode, pdf417 etc.)
     }
 
-    public Dialog showDialog(String title, String msg) {
+    public Dialog showDialog(String title, final String msg) {
 
         final AlertDialog alertDialog = new AlertDialog.Builder(this)
                 .create();
         alertDialog.setTitle(title);
         alertDialog.setMessage(msg);
-        alertDialog.setButton("Rescan?", new DialogInterface.OnClickListener() {
-            public void onClick(DialogInterface dialog, int which) {
-                alertDialog.dismiss();
-                mScannerView.startCamera();          // Start camera on resume
-            }
-        });
+//        alertDialog.setButton("Rescan?", new DialogInterface.OnClickListener() {
+//            public void onClick(DialogInterface dialog, int which) {
+//                alertDialog.dismiss();
+//                mScannerView.startCamera();          // Start camera on resume
+//            }
+//        });
+        alertDialog.setButton("Open", new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int which) {
+                        if (msg != null && !msg.isEmpty()) {
+                            String urlToOpen = msg;
+                            URL url = null;
+                            try {
+                                if (!urlToOpen.startsWith("http://") && !urlToOpen.startsWith("https://"))
+                                    urlToOpen = "http://" + urlToOpen;
+                                url = new URL(urlToOpen);//check for correct url
+                            } catch (MalformedURLException e) {
+                                e.printStackTrace();
+                            }
+                            if (url != null) {
+                                final Intent intent = new Intent(Intent.ACTION_VIEW).setData(Uri.parse(urlToOpen));
+                                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                                getBaseContext().startActivity(intent);
+                            } else {
+                                final Intent intent = new Intent(Intent.ACTION_VIEW).setData(Uri.parse("https://www.google.co.in/search?q=" + msg));
+                                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                                getBaseContext().startActivity(intent);
+                            }
+                        }
+                    }
+                }
+        );
         alertDialog.show();
         return alertDialog;
 
